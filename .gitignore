@@ -4,15 +4,15 @@ __pycache__/
 *$py.class
 *.so
 .Python
-
-# 仮想環境
 venv/
 env/
 ENV/
+.venv
 
-# データベース
-tasks.db
+# Database
 *.db
+*.sqlite
+*.sqlite3
 
 # IDE
 .vscode/
@@ -25,7 +25,10 @@ tasks.db
 .DS_Store
 Thumbs.db
 
-# その他
-*.log
+# Environment variables
 .env
+.env.local
+
+# Logs
+*.log
 

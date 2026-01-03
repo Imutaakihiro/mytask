@@ -54,6 +54,12 @@
             overflow: hidden;
         }
 
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
         .header-actions {
             display: flex;
             justify-content: space-between;
@@ -600,20 +606,232 @@
             border-color: var(--text-primary);
         }
 
+        /* タブレット以下 */
         @media (max-width: 1200px) {
+            html, body {
+                overflow: auto;
+                height: auto;
+                min-height: 100%;
+            }
+
+            body {
+                display: block;
+            }
+
             .container {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto;
+                overflow: visible;
+                padding: 8px;
+            }
+
+            .main-content {
+                overflow: visible;
             }
 
             .sidebar {
                 width: 100%;
-                max-height: 320px;
+                max-height: none;
+                margin-top: 8px;
+            }
+
+            .matrix-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto;
+                min-height: 400px;
+            }
+
+            .quadrant {
+                min-height: 200px;
+            }
+        }
+
+        /* モバイル（768px以下） */
+        @media (max-width: 768px) {
+            html, body {
+                overflow: auto;
+                height: auto;
+                min-height: 100%;
+            }
+
+            body {
+                display: block;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                gap: 8px;
+                padding: 8px;
+                overflow: visible;
+            }
+
+            .main-content {
+                overflow: visible;
+            }
+
+            .header-actions {
+                padding: 10px 12px;
+                margin-bottom: 8px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            .export-btn {
+                padding: 5px 10px;
+                font-size: 10px;
             }
 
             .matrix-grid {
                 grid-template-columns: 1fr;
                 grid-template-rows: auto;
+                gap: 8px;
+                border: none;
+                background: transparent;
+            }
+
+            .quadrant {
+                border: 1px solid var(--border-hairline);
+                border-radius: 6px;
+                padding: 12px;
+                min-height: 200px;
+            }
+
+            .quadrant:nth-child(1),
+            .quadrant:nth-child(2),
+            .quadrant:nth-child(3),
+            .quadrant:nth-child(4) {
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                border-bottom-left-radius: 6px;
+                border-bottom-right-radius: 6px;
+                border-right: 1px solid var(--border-hairline);
+                border-bottom: 1px solid var(--border-hairline);
+            }
+
+            .quadrant h2 {
+                font-size: 10px;
+                margin-bottom: 10px;
+                padding-bottom: 6px;
+            }
+
+            .tasks {
+                min-height: 150px;
+            }
+
+            .task-card {
+                padding: 8px 10px;
+                margin-bottom: 4px;
+            }
+
+            .task-title {
+                font-size: 13px;
+            }
+
+            .delete-btn {
+                opacity: 1;
+                width: 20px;
+                height: 20px;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 10px;
+                margin-top: 8px;
+            }
+
+            .add-task-form h2 {
+                font-size: 11px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                padding: 10px;
+                font-size: 16px; /* iOSでズームを防ぐ */
+            }
+
+            .submit-btn {
+                padding: 12px;
+                font-size: 13px;
+            }
+
+            .detail-panel {
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+
+            .detail-title {
+                font-size: 15px;
+            }
+
+            .detail-text {
+                font-size: 14px;
+            }
+        }
+
+        /* 小さなモバイル（480px以下） */
+        @media (max-width: 480px) {
+            .container {
+                padding: 6px;
+                gap: 6px;
+            }
+
+            .header-actions {
+                padding: 8px 10px;
+                margin-bottom: 6px;
+            }
+
+            h1 {
+                font-size: 16px;
+            }
+
+            .export-btn {
+                padding: 4px 8px;
+                font-size: 9px;
+            }
+
+            .quadrant {
+                padding: 10px;
+                min-height: 180px;
+            }
+
+            .quadrant h2 {
+                font-size: 9px;
+                margin-bottom: 8px;
+            }
+
+            .tasks {
+                min-height: 120px;
+                padding: 2px;
+            }
+
+            .task-card {
+                padding: 6px 8px;
+            }
+
+            .task-title {
+                font-size: 12px;
+            }
+
+            .sidebar {
+                padding: 8px;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                padding: 8px;
+            }
+
+            .submit-btn {
+                padding: 10px;
             }
         }
     </style>
