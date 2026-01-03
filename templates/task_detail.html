@@ -1,0 +1,41 @@
+<div class="detail-header">
+    <div>
+        <p class="detail-label">Task</p>
+        <h3 class="detail-title">{{ task.title }}</h3>
+    </div>
+    <button class="detail-close" onclick="document.getElementById('detail-panel').innerHTML = '<p class=&quot;detail-empty&quot;>—</p>';">×</button>
+</div>
+<div class="detail-body">
+    <div class="detail-row">
+        <span class="detail-key">Quadrant</span>
+        <span class="detail-value">Q{{ task.quadrant }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-key">Due</span>
+        <span class="detail-value">{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-key">Status</span>
+        <span class="detail-value">{{ 'Done' if task.completed else 'Open' }}</span>
+    </div>
+    <div class="detail-block">
+        <p class="detail-label">Description</p>
+        <p class="detail-text">{{ task.description or '—' }}</p>
+    </div>
+</div>
+<div class="detail-actions">
+    <button class="outline-btn"
+            hx-patch="/api/tasks/{{ task.id }}"
+            hx-target="#detail-panel"
+            hx-swap="innerHTML"
+            hx-vals='{"completed": "{{ "false" if task.completed else "true" }}"}'>
+        {{ 'Mark Open' if task.completed else 'Mark Done' }}
+    </button>
+    <button class="outline-btn danger"
+            hx-delete="/api/tasks/{{ task.id }}/html"
+            hx-swap="delete"
+            hx-on::after-request="document.getElementById('detail-panel').innerHTML = '<p class=&quot;detail-empty&quot;>—</p>'; htmx.trigger('body', 'refresh')">
+        Delete
+    </button>
+</div>
+

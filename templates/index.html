@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイゼンハワー・マトリックス</title>
+    <!-- HTMXのCDN読み込み -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Sortable.jsのCDN読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #fff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #000;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --border-hairline: rgba(0, 0, 0, 0.12);
+            --shadow-sm: rgba(0, 0, 0, 0.03) 0px 1px 2px;
+            --shadow-md: rgba(0, 0, 0, 0.06) 0px 2px 4px;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-weight: 300;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 12px;
+            padding: 12px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 300;
+            color: var(--text-primary);
+            letter-spacing: 0.05em;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .export-btn {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 400;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            letter-spacing: 0.02em;
+        }
+
+        .export-btn:hover {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: var(--text-secondary);
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0;
+            flex: 1;
+            overflow: hidden;
+            border-radius: 6px;
+            box-shadow: none;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-hairline);
+        }
+
+        .quadrant {
+            background: var(--bg-primary);
+            border: none;
+            border-radius: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            border-right: 0.5px solid var(--border-hairline);
+            border-bottom: 0.5px solid var(--border-hairline);
+        }
+
+        .quadrant:nth-child(1) {
+            border-top-left-radius: 5px;
+        }
+
+        .quadrant:nth-child(2) {
+            border-top-right-radius: 5px;
+            border-right: none;
+        }
+
+        .quadrant:nth-child(3) {
+            border-bottom-left-radius: 5px;
+            border-bottom: none;
+        }
+
+        .quadrant:nth-child(4) {
+            border-bottom-right-radius: 5px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .quadrant h2 {
+            font-size: 11px;
+            font-weight: 400;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 0.5px solid var(--border-hairline);
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .tasks {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px;
+            min-height: 0;
+        }
+
+        .tasks::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tasks::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tasks::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .tasks::-webkit-scrollbar-thumb:hover {
+            background: rgba(55, 53, 47, 0.2);
+        }
+
+        .task-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            box-shadow: none;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .task-card:hover {
+            background: var(--bg-secondary);
+            border-color: var(--border-hairline);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .task-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .task-card.sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            line-height: 1;
+            transition: all 0.15s ease;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            opacity: 0;
+        }
+
+        .delete-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+        }
+
+        .task-description-input {
+            width: 100%;
+            min-height: 60px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 10px;
+            background: transparent;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .task-description-input:hover {
+            background: rgba(55, 53, 47, 0.03);
+        }
+
+        .task-description-input:focus {
+            outline: 2px solid var(--quadrant-2);
+            outline-offset: 2px;
+            background: var(--bg-primary);
+            border-color: var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .task-due-date-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .task-due-date-input label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .task-due-date-input input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .task-due-date-input input:focus {
+            outline: 2px solid var(--quadrant-2);
+            outline-offset: 2px;
+            border-color: var(--quadrant-2);
+        }
+
+        .task-footer {
+            display: flex;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .completed-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            gap: 8px;
+        }
+
+        .completed-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--quadrant-2);
+        }
+
+        .empty-message {
+            color: var(--text-tertiary);
+            font-style: normal;
+            text-align: center;
+            padding: 40px 15px;
+            font-size: 11px;
+            letter-spacing: 0.02em;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(55, 53, 47, 0.2);
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            gap: 12px;
+        }
+
+        .add-task-form {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .add-task-form h2 {
+            margin: 0 0 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-weight: 400;
+            color: var(--text-secondary);
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 0;
+            font-size: 14px;
+            font-weight: 300;
+            font-family: inherit;
+            background: transparent;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 70px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 10px;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-bottom-color: var(--text-primary);
+            background: rgba(0, 0, 0, 0.01);
+        }
+
+        .form-group textarea:focus {
+            border-color: var(--text-primary);
+        }
+
+        .submit-btn {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.85;
+        }
+
+        .submit-btn:active {
+            opacity: 0.7;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        /* 詳細パネル */
+        .detail-panel {
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .detail-empty {
+            color: var(--text-tertiary);
+            font-size: 11px;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-close {
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+            transition: all 0.2s ease;
+            border-radius: 3px;
+        }
+
+        .detail-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+        }
+
+        .detail-label {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+            font-weight: 400;
+        }
+
+        .detail-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin: 0;
+            letter-spacing: 0.01em;
+        }
+
+        .detail-body {
+            margin-bottom: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+
+        .detail-key {
+            color: var(--text-tertiary);
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 300;
+            font-size: 13px;
+        }
+
+        .detail-block {
+            margin-top: 12px;
+        }
+
+        .detail-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 6px;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            min-height: 70px;
+        }
+
+        .detail-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .outline-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 9px;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .outline-btn:hover {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: var(--text-primary);
+        }
+
+        .outline-btn.danger {
+            border-color: var(--border-color);
+        }
+
+        .outline-btn.danger:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: var(--text-primary);
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 320px;
+            }
+
+            .matrix-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+        <div class="container">
+        <div class="main-content">
+            <div class="header-actions">
+                <h1>Eisenhower Matrix</h1>
+                <a href="/api/export" class="export-btn" download>エクスポート</a>
+            </div>
+            
+            <!-- 4象限のグリッドレイアウト -->
+            <div class="matrix-grid">
+            <!-- 第1象限：緊急かつ重要 -->
+            <div class="quadrant quadrant-1">
+                <h2>Q1 · 緊急かつ重要</h2>
+                <div class="tasks" 
+                     id="quadrant-1"
+                     hx-get="/api/tasks/quadrant/1"
+                     hx-trigger="load, refresh from:body"
+                     hx-swap="innerHTML">
+                    <p class="empty-message">—</p>
+                </div>
+            </div>
+            
+            <!-- 第2象限：重要だが緊急でない -->
+            <div class="quadrant quadrant-2">
+                <h2>Q2 · 重要</h2>
+                <div class="tasks" 
+                     id="quadrant-2"
+                     hx-get="/api/tasks/quadrant/2"
+                     hx-trigger="load, refresh from:body"
+                     hx-swap="innerHTML">
+                    <p class="empty-message">—</p>
+                </div>
+            </div>
+            
+            <!-- 第3象限：緊急だが重要でない -->
+            <div class="quadrant quadrant-3">
+                <h2>Q3 · 緊急</h2>
+                <div class="tasks" 
+                     id="quadrant-3"
+                     hx-get="/api/tasks/quadrant/3"
+                     hx-trigger="load, refresh from:body"
+                     hx-swap="innerHTML">
+                    <p class="empty-message">—</p>
+                </div>
+            </div>
+            
+            <!-- 第4象限：緊急でも重要でもない -->
+            <div class="quadrant quadrant-4">
+                <h2>Q4 · その他</h2>
+                <div class="tasks" 
+                     id="quadrant-4"
+                     hx-get="/api/tasks/quadrant/4"
+                     hx-trigger="load, refresh from:body"
+                     hx-swap="innerHTML">
+                    <p class="empty-message">—</p>
+                </div>
+            </div>
+            </div> <!-- /.matrix-grid -->
+        </div> <!-- /.main-content -->
+        
+        <!-- サイドバー：タスク追加フォーム -->
+        <div class="sidebar">
+            <div class="add-task-form">
+                <h2>Add Task</h2>
+                <form hx-post="/api/tasks/html"
+                      hx-target="#quadrant-1"
+                      hx-swap="afterbegin"
+                      hx-on::after-request="this.reset(); htmx.trigger('body', 'refresh')">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quadrant">Quadrant</label>
+                        <select id="quadrant" name="quadrant" required
+                                onchange="document.querySelector('form').setAttribute('hx-target', '#quadrant-' + this.value)">
+                            <option value="1">Q1 · 緊急かつ重要</option>
+                            <option value="2">Q2 · 重要</option>
+                            <option value="3">Q3 · 緊急</option>
+                            <option value="4">Q4 · その他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due</label>
+                        <input type="date" id="due_date" name="due_date">
+                    </div>
+                    <button type="submit" class="submit-btn">Add</button>
+                </form>
+            </div>
+            <div id="detail-panel" class="detail-panel">
+                <p class="detail-empty">—</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sortable.jsの初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 各象限にSortable.jsを適用
+            const quadrants = ['quadrant-1', 'quadrant-2', 'quadrant-3', 'quadrant-4'];
+            const sortables = {};
+
+            quadrants.forEach(quadrantId => {
+                const element = document.getElementById(quadrantId);
+                if (element) {
+                    sortables[quadrantId] = new Sortable(element, {
+                        group: 'quadrants',  // 同じグループ内で移動可能
+                        animation: 150,
+                        handle: '.task-card',  // タスクカード全体をドラッグ可能
+                        onEnd: function(evt) {
+                            const taskCard = evt.item;
+                            const taskId = taskCard.dataset.taskId;
+                            const newQuadrant = evt.to.id.replace('quadrant-', '');
+                            
+                            // HTMXでサーバーに送信
+                            htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
+                                values: {quadrant: newQuadrant},
+                                target: taskCard,
+                                swap: 'outerHTML'
+                            }).then(() => {
+                                // 移動元と移動先の象限をリフレッシュ
+                                htmx.trigger(`#${evt.from.id}`, 'refresh');
+                                htmx.trigger(`#${evt.to.id}`, 'refresh');
+                            });
+                        }
+                    });
+                }
+            });
+
+            // HTMXでタスクが追加された後にSortable.jsを再初期化
+            document.body.addEventListener('htmx:afterSwap', function(evt) {
+                if (evt.detail.target.id && evt.detail.target.id.startsWith('quadrant-')) {
+                    const quadrantId = evt.detail.target.id;
+                    if (sortables[quadrantId]) {
+                        sortables[quadrantId].destroy();
+                    }
+                    sortables[quadrantId] = new Sortable(evt.detail.target, {
+                        group: 'quadrants',
+                        animation: 150,
+                        handle: '.task-card',
+                        onEnd: function(evt) {
+                            const taskCard = evt.item;
+                            const taskId = taskCard.dataset.taskId;
+                            const newQuadrant = evt.to.id.replace('quadrant-', '');
+                            
+                            htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
+                                values: {quadrant: newQuadrant},
+                                target: taskCard,
+                                swap: 'outerHTML'
+                            }).then(() => {
+                                htmx.trigger(`#${evt.from.id}`, 'refresh');
+                                htmx.trigger(`#${evt.to.id}`, 'refresh');
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<div class="task-card"
+     data-task-id="{{ task.id }}"
+     data-quadrant="{{ task.quadrant }}"
+     hx-get="/api/tasks/{{ task.id }}/detail"
+     hx-target="#detail-panel"
+     hx-swap="innerHTML">
+    <div class="task-header">
+        <div class="task-title">{{ task.title }}</div>
+        <button class="delete-btn"
+                hx-delete="/api/tasks/{{ task.id }}/html"
+                hx-target="closest .task-card"
+                hx-swap="outerHTML"
+                title="Delete">×</button>
+    </div>
+</div>
+

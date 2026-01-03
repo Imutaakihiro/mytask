@@ -1,0 +1,18 @@
+# 依存パッケージ
+# FastAPI + HTMX タスク管理アプリ
+
+# Webフレームワーク
+fastapi==0.109.0
+
+# ASGIサーバー（FastAPIを動かすため）
+uvicorn[standard]==0.27.0
+
+# フォームデータ処理（HTMXのフォーム送信で必要）
+python-multipart==0.0.6
+
+jinja2==3.1.2
+
+# 注意: HTMXはJavaScriptライブラリなので、requirements.txtには含めません
+# HTMXは以下の方法で読み込みます：
+# - 開発用: CDN（https://unpkg.com/htmx.org@1.9.10）
+# - 本番用: static/htmx.min.js にダウンロードして配置
