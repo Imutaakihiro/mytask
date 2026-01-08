@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request
-from app.database import init_db, create_task, get_all_tasks, get_task_by_id, update_task, delete_task
+from app.database import init_db, create_task, get_all_tasks, get_task_by_id, get_tasks_by_quadrant, update_task, update_task_positions, delete_task
 from app.models import Task, TaskCreate
 from datetime import datetime
 from fastapi import HTTPException
@@ -38,10 +38,10 @@ async def get_tasks():
             title=row[1],
             description=row[2],
             quadrant=row[3],
-            completed=bool(row[4]),
-            due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-            created_at=datetime.fromisoformat(row[6]),
-            updated_at=datetime.fromisoformat(row[7])
+            completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+            due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+            created_at=datetime.fromisoformat(row[7]),
+            updated_at=datetime.fromisoformat(row[8])
         )
         tasks.append(task)
     return tasks
@@ -62,10 +62,10 @@ async def create_new_task(task: TaskCreate):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return created_task
 
@@ -81,10 +81,10 @@ async def get_task(task_id: int):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return task
 
@@ -112,10 +112,10 @@ async def update_existing_task(task_id: int, task: TaskCreate):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return updated_task
 
@@ -133,22 +133,21 @@ async def delete_existing_task(task_id: int):
 # HTMX用のHTMLエンドポイント
 @app.get("/api/tasks/quadrant/{quadrant_id}", response_class=HTMLResponse)
 async def get_tasks_by_quadrant_html(request: Request, quadrant_id: int):
-    """指定された象限のタスクをHTMLで取得"""
-    rows = get_all_tasks()
+    """指定された象限のタスクをHTMLで取得（順序付き）"""
+    rows = get_tasks_by_quadrant(quadrant_id)
     tasks = []
     for row in rows:
-        if row[3] == quadrant_id:  # quadrantカラム
-            task = Task(
-                id=row[0],
-                title=row[1],
-                description=row[2],
-                quadrant=row[3],
-                completed=bool(row[4]),
-                due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-                created_at=datetime.fromisoformat(row[6]),
-                updated_at=datetime.fromisoformat(row[7])
-            )
-            tasks.append(task)
+        task = Task(
+            id=row[0],
+            title=row[1],
+            description=row[2],
+            quadrant=row[3],
+            completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+            due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+            created_at=datetime.fromisoformat(row[7]),
+            updated_at=datetime.fromisoformat(row[8])
+        )
+        tasks.append(task)
     return templates.TemplateResponse("task_list.html", {
         "request": request,
         "tasks": tasks,
@@ -172,10 +171,10 @@ async def create_task_html(request: Request):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return templates.TemplateResponse("task_card.html", {
         "request": request,
@@ -202,10 +201,10 @@ async def get_task_detail(request: Request, task_id: int):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return templates.TemplateResponse("task_detail.html", {
         "request": request,
@@ -234,10 +233,10 @@ async def update_task_html(request: Request, task_id: int):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return templates.TemplateResponse("task_card.html", {
         "request": request,
@@ -263,10 +262,10 @@ async def patch_task_html(request: Request, task_id: int):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return templates.TemplateResponse("task_card.html", {
         "request": request,
@@ -282,7 +281,13 @@ async def update_task_quadrant(request: Request, task_id: int):
         raise HTTPException(status_code=404, detail="Task not found")
     
     new_quadrant = int(form_data.get("quadrant"))
-    update_task(task_id=task_id, quadrant=new_quadrant)
+    old_quadrant = existing[3]  # 元の象限
+    
+    # 新しい象限の最大positionを取得して+1
+    rows = get_tasks_by_quadrant(new_quadrant)
+    new_position = len(rows)  # 最後尾に追加
+    
+    update_task(task_id=task_id, quadrant=new_quadrant, position=new_position)
     
     # 更新されたタスクを取得
     row = get_task_by_id(task_id)
@@ -291,14 +296,49 @@ async def update_task_quadrant(request: Request, task_id: int):
         title=row[1],
         description=row[2],
         quadrant=row[3],
-        completed=bool(row[4]),
-        due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-        created_at=datetime.fromisoformat(row[6]),
-        updated_at=datetime.fromisoformat(row[7])
+        completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+        due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+        created_at=datetime.fromisoformat(row[7]),
+        updated_at=datetime.fromisoformat(row[8])
     )
     return templates.TemplateResponse("task_card.html", {
         "request": request,
         "task": task
+    })
+
+@app.patch("/api/tasks/quadrant/{quadrant_id}/reorder", response_class=HTMLResponse)
+async def reorder_tasks_in_quadrant(request: Request, quadrant_id: int):
+    """HTMX用：同じ象限内でのタスクの順序を更新"""
+    body = await request.json()
+    task_ids = body.get("task_ids", [])  # [task_id1, task_id2, ...] の形式
+    
+    if not task_ids:
+        raise HTTPException(status_code=400, detail="task_ids is required")
+    
+    # タスクIDとpositionのペアを作成
+    task_positions = [(task_id, position) for position, task_id in enumerate(task_ids)]
+    update_task_positions(quadrant_id, task_positions)
+    
+    # 更新後のタスク一覧を取得して返す
+    rows = get_tasks_by_quadrant(quadrant_id)
+    tasks = []
+    for row in rows:
+        task = Task(
+            id=row[0],
+            title=row[1],
+            description=row[2],
+            quadrant=row[3],
+            completed=bool(row[5]),
+            due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+            created_at=datetime.fromisoformat(row[7]),
+            updated_at=datetime.fromisoformat(row[8])
+        )
+        tasks.append(task)
+    
+    return templates.TemplateResponse("task_list.html", {
+        "request": request,
+        "tasks": tasks,
+        "quadrant_id": quadrant_id
     })
 
 @app.get("/api/export")
@@ -323,10 +363,10 @@ async def export_tasks():
             title=row[1],
             description=row[2],
             quadrant=row[3],
-            completed=bool(row[4]),
-            due_date=datetime.fromisoformat(row[5]) if row[5] else None,
-            created_at=datetime.fromisoformat(row[6]),
-            updated_at=datetime.fromisoformat(row[7])
+            completed=bool(row[5]),  # positionが追加されたためインデックスが1つずれる
+            due_date=datetime.fromisoformat(row[6]) if row[6] else None,
+            created_at=datetime.fromisoformat(row[7]),
+            updated_at=datetime.fromisoformat(row[8])
         )
         quadrants[quadrant].append(task)
     

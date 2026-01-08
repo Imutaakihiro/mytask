@@ -952,18 +952,39 @@
                         onEnd: function(evt) {
                             const taskCard = evt.item;
                             const taskId = taskCard.dataset.taskId;
+                            const oldQuadrant = evt.from.id.replace('quadrant-', '');
                             const newQuadrant = evt.to.id.replace('quadrant-', '');
                             
-                            // HTMXでサーバーに送信
-                            htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
-                                values: {quadrant: newQuadrant},
-                                target: taskCard,
-                                swap: 'outerHTML'
-                            }).then(() => {
-                                // 移動元と移動先の象限をリフレッシュ
-                                htmx.trigger(`#${evt.from.id}`, 'refresh');
-                                htmx.trigger(`#${evt.to.id}`, 'refresh');
-                            });
+                            // 同じ象限内での移動か、異なる象限への移動かを判定
+                            if (oldQuadrant === newQuadrant) {
+                                // 同じ象限内での順序変更
+                                const quadrantElement = evt.to;
+                                const taskCards = Array.from(quadrantElement.querySelectorAll('.task-card'));
+                                const taskIds = taskCards.map(card => parseInt(card.dataset.taskId));
+                                
+                                // 順序を更新
+                                fetch(`/api/tasks/quadrant/${newQuadrant}/reorder`, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ task_ids: taskIds })
+                                }).then(() => {
+                                    // 象限をリフレッシュ
+                                    htmx.trigger(`#${evt.to.id}`, 'refresh');
+                                });
+                            } else {
+                                // 異なる象限への移動
+                                htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
+                                    values: {quadrant: newQuadrant},
+                                    target: taskCard,
+                                    swap: 'outerHTML'
+                                }).then(() => {
+                                    // 移動元と移動先の象限をリフレッシュ
+                                    htmx.trigger(`#${evt.from.id}`, 'refresh');
+                                    htmx.trigger(`#${evt.to.id}`, 'refresh');
+                                });
+                            }
                         }
                     });
                 }
@@ -983,16 +1004,39 @@
                         onEnd: function(evt) {
                             const taskCard = evt.item;
                             const taskId = taskCard.dataset.taskId;
+                            const oldQuadrant = evt.from.id.replace('quadrant-', '');
                             const newQuadrant = evt.to.id.replace('quadrant-', '');
                             
-                            htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
-                                values: {quadrant: newQuadrant},
-                                target: taskCard,
-                                swap: 'outerHTML'
-                            }).then(() => {
-                                htmx.trigger(`#${evt.from.id}`, 'refresh');
-                                htmx.trigger(`#${evt.to.id}`, 'refresh');
-                            });
+                            // 同じ象限内での移動か、異なる象限への移動かを判定
+                            if (oldQuadrant === newQuadrant) {
+                                // 同じ象限内での順序変更
+                                const quadrantElement = evt.to;
+                                const taskCards = Array.from(quadrantElement.querySelectorAll('.task-card'));
+                                const taskIds = taskCards.map(card => parseInt(card.dataset.taskId));
+                                
+                                // 順序を更新
+                                fetch(`/api/tasks/quadrant/${newQuadrant}/reorder`, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ task_ids: taskIds })
+                                }).then(() => {
+                                    // 象限をリフレッシュ
+                                    htmx.trigger(`#${evt.to.id}`, 'refresh');
+                                });
+                            } else {
+                                // 異なる象限への移動
+                                htmx.ajax('PATCH', `/api/tasks/${taskId}/quadrant`, {
+                                    values: {quadrant: newQuadrant},
+                                    target: taskCard,
+                                    swap: 'outerHTML'
+                                }).then(() => {
+                                    // 移動元と移動先の象限をリフレッシュ
+                                    htmx.trigger(`#${evt.from.id}`, 'refresh');
+                                    htmx.trigger(`#${evt.to.id}`, 'refresh');
+                                });
+                            }
                         }
                     });
                 }

@@ -19,12 +19,19 @@ def init_db():
             title TEXT NOT NULL,
             description TEXT,
             quadrant INTEGER NOT NULL CHECK(quadrant IN (1, 2, 3, 4)),
+            position INTEGER DEFAULT 0,
             completed BOOLEAN DEFAULT 0,
             due_date TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # positionカラムが存在しない場合は追加（マイグレーション）
+    cursor.execute('PRAGMA table_info(tasks)')
+    columns = [column[1] for column in cursor.fetchall()]
+    if 'position' not in columns:
+        cursor.execute('ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0')
     
     conn.commit()
     conn.close()
@@ -33,10 +40,15 @@ def create_task(title: str, description: Optional[str], quadrant: int, due_date:
     """新しいタスクを作成"""
     conn = get_connection()
     cursor = conn.cursor()
+    # 同じ象限内の最大positionを取得して+1
+    cursor.execute('SELECT COALESCE(MAX(position), -1) FROM tasks WHERE quadrant = ?', (quadrant,))
+    max_position = cursor.fetchone()[0]
+    new_position = max_position + 1
+    
     cursor.execute('''
-        INSERT INTO tasks (title, description, quadrant, due_date)
-        VALUES (?, ?, ?, ?)
-    ''', (title, description, quadrant, due_date))
+        INSERT INTO tasks (title, description, quadrant, position, due_date)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (title, description, quadrant, new_position, due_date))
     task_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -46,7 +58,16 @@ def get_all_tasks():
     """すべてのタスクを取得"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM tasks ORDER BY created_at DESC')
+    cursor.execute('SELECT * FROM tasks ORDER BY quadrant, position, created_at')
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_tasks_by_quadrant(quadrant: int):
+    """指定された象限のタスクを順序付きで取得"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM tasks WHERE quadrant = ? ORDER BY position, created_at', (quadrant,))
     rows = cursor.fetchall()
     conn.close()
     return rows
@@ -61,7 +82,8 @@ def get_task_by_id(task_id: int):
     return row
 
 def update_task(task_id: int, title: Optional[str] = None, description: Optional[str] = None, 
-                quadrant: Optional[int] = None, completed: Optional[bool] = None, due_date: Optional[str] = None):
+                quadrant: Optional[int] = None, position: Optional[int] = None, 
+                completed: Optional[bool] = None, due_date: Optional[str] = None):
     """タスクを更新"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -79,6 +101,9 @@ def update_task(task_id: int, title: Optional[str] = None, description: Optional
     if quadrant is not None:
         updates.append("quadrant = ?")
         params.append(quadrant)
+    if position is not None:
+        updates.append("position = ?")
+        params.append(position)
     if completed is not None:
         updates.append("completed = ?")
         params.append(completed)
@@ -95,6 +120,20 @@ def update_task(task_id: int, title: Optional[str] = None, description: Optional
         cursor.execute(query, params)
         conn.commit()
     
+    conn.close()
+
+def update_task_positions(quadrant: int, task_positions: list):
+    """象限内のタスクの順序を一括更新
+    task_positions: [(task_id, position), ...] の形式
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    for task_id, position in task_positions:
+        cursor.execute('UPDATE tasks SET position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', 
+                      (position, task_id))
+    
+    conn.commit()
     conn.close()
 
 def delete_task(task_id: int):
